@@ -1,0 +1,66 @@
+name: flutter_wiki
+description: "Wikipedia Explorer — finds nearby Wikipedia articles via GPS or city search."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.3.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # ---------------------------------------------------------------------------
+  # http — Dart's equivalent of the browser fetch() API or axios.
+  # Async calls return Future<T>, which is Dart's equivalent of Promise<T>.
+  # Usage: `final response = await http.get(uri)` → same as `await fetch(url)`
+  # ---------------------------------------------------------------------------
+  http: ^1.2.1
+
+  # ---------------------------------------------------------------------------
+  # flutter_riverpod — state management library.
+  # Mental model for a React/Zustand developer:
+  #   ProviderScope   →  <Provider store={store}> wrapping the root component
+  #   Notifier<T>     →  a Zustand store class (holds state + exposes actions)
+  #   ref.watch()     →  useSelector(state => slice)  /  useStore()
+  #   ref.read()      →  store.getState() — used inside event handlers
+  # ---------------------------------------------------------------------------
+  flutter_riverpod: ^2.5.1
+
+  # ---------------------------------------------------------------------------
+  # geolocator — cross-platform GPS plugin (Android, iOS, Web).
+  # On web it delegates to the browser's navigator.geolocation API.
+  # IMPORTANT: Requires platform-specific setup:
+  #   Android → android/app/src/main/AndroidManifest.xml:
+  #     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+  #   iOS → ios/Runner/Info.plist:
+  #     <key>NSLocationWhenInUseUsageDescription</key>
+  #     <string>Used to find nearby Wikipedia articles.</string>
+  # ---------------------------------------------------------------------------
+  geolocator: ^12.0.0
+
+  # ---------------------------------------------------------------------------
+  # url_launcher — opens a URL in the device's default browser.
+  # Equivalent to window.open(url, '_blank') on the web.
+  # ---------------------------------------------------------------------------
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # ---------------------------------------------------------------------------
+  # integration_test — Flutter's E2E test framework.
+  # Think of it as Playwright or Cypress, but for the Flutter widget tree.
+  # Runs on a real device/emulator, driving actual taps and text input.
+  # ---------------------------------------------------------------------------
+  integration_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
