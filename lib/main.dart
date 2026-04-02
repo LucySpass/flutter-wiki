@@ -22,7 +22,7 @@
 //               │  └─ [History tab]
 //               │     └─ _HistoryView        ← previously visited articles
 //               │        └─ _HistoryCard     ← individual history item
-//               └─ bottomNavigationBar: _Footer  ← 'made by Ivana', always visible
+//               └─ bottomNavigationBar: _Footer  ← 'by Ivana', always visible
 // =============================================================================
 
 import 'package:flutter/material.dart';
@@ -955,7 +955,7 @@ class _Footer extends StatelessWidget {
     // textAlign: TextAlign.center achieves the same visual result safely.
     // Row keeps the footer text centred without using Center (which would expand
     // to fill the full bottomNavigationBar height and collapse the body).
-    // "made by " is plain text; "Ivana" is a GestureDetector — same pattern as
+    // "by " is plain text; "Ivana" is a GestureDetector — same pattern as
     // wrapping a <span onClick={...}> inside a <p> in React.
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -963,34 +963,28 @@ class _Footer extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'made by ',
+            'by ',
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
               fontSize: 14,
             ),
           ),
-
-      //     Semantics(
-      // // Compose a rich accessible label for each card — equivalent to:
-      // //   aria-label={`${title}. ${dist}m away. ${visited ? 'Visited.' : 'Tap to open.'}`}
-      // label: '${article.title}. '
-      //     '${article.dist.toStringAsFixed(0)} metres away. '
-      //     '${isVisited ? 'Already visited.' : 'Tap to open in browser.'}',
-      // button: true,
-          // GestureDetector wraps only "Ivana" so only that word is tappable.
-          // Equivalent to: <a href="https://google.com" target="_blank">Ivana</a>
-          GestureDetector(
-            onTap: () async {
-              final uri = Uri.parse('https://www.google.com');
-              if (await canLaunchUrl(uri)) {
-                // LaunchMode.externalApplication = target="_blank" — opens in browser.
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
+          // TextButton = <button> in HTML. Already handles ripple, semantics,
+          // and focus/hover states out of the box — no manual InkWell needed.
+          // Equivalent to: <a href="https://www.linkedin.com/in/ivana-begovic/" target="_blank">Ivana</a>
+          TextButton(
+            onPressed: () => launchUrl(
+              Uri.parse('https://www.linkedin.com/in/ivana-begovic/'),
+              mode: LaunchMode.externalApplication,
+            ),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             child: Text(
               'Ivana',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
                 fontSize: 14,
                 decoration: TextDecoration.underline,
                 decorationColor: Theme.of(context).colorScheme.primary,

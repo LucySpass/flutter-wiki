@@ -258,5 +258,160 @@ void main() {
         expect(find.byTooltip('Follow system theme'), findsNothing);
       },
     );
+
+    // -------------------------------------------------------------------------
+    // TEST: History flow — search → tap article → history tab shows it
+    //
+    // This test exercises the full Riverpod state cycle:
+    //   1. User searches "Banja Luka" → fetchByCity dispatches two API calls
+    //   2. Articles render in the Explore tab
+    //   3. User taps an article → addToHistory fires → state.history grows
+    //   4. Stats bar reflects the new history count
+    //   5. User switches to History tab → the article title is visible
+    //
+    // React analogy: testing that dispatching an action in one component
+    // (ArticleCard → addToHistory) updates the Zustand store and a completely
+    // different component (HistoryView) re-renders with the new data.
+    //
+    // NOTE: Tapping an article also calls launchUrl, which opens the device
+    // browser. We can't prevent that in an integration test, but the history
+    // state updates synchronously before the async launchUrl call, so our
+    // assertions still work.
+    // -------------------------------------------------------------------------
+    testWidgets(
+      'should add tapped article to history and display it in the History tab',
+      (WidgetTester tester) async {
+        // -------------------------------------------------------------------
+        // STEP 1 — Launch the app
+        // -------------------------------------------------------------------
+        app.main();
+        await tester.pumpAndSettle();
+
+        // -------------------------------------------------------------------
+        // STEP 2 — Search for "Banja Luka"
+        //
+        // Playwright: await page.fill('[data-testid="city-input"]', 'Banja Luka')
+        // -------------------------------------------------------------------
+        final cityInputFinder = find.byKey(const Key('city_input'));
+        await tester.enterText(cityInputFinder, 'Banja Luka');
+        await tester.pump();
+
+        final searchButtonFinder = find.byKey(const Key('search_button'));
+        await tester.tap(searchButtonFinder);
+        await tester.pump();
+
+        // Loading spinner should appear while API calls are in progress.
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Wait for the two API calls (geocode + Wikipedia) to complete.
+        await tester.pumpAndSettle(const Duration(seconds: 15));
+
+        // Articles should now be visible.
+        expect(find.byType(ListTile), findsWidgets);
+
+        // -------------------------------------------------------------------
+        // STEP 3 — Verify history is empty before tapping
+        //
+        // The stats bar should show "History: 0".
+        // RTL: expect(screen.getByText(/History: 0/)).toBeInTheDocument()
+        // -------------------------------------------------------------------
+        expect(find.textContaining('History: 0'), findsOneWidget);
+
+        // -------------------------------------------------------------------
+        // STEP 4 — Tap the first article
+        //
+        // `find.byType(ListTile).first` grabs the first article card.
+        // This fires addToHistory (sync) and then launchUrl (async).
+        //
+        // Playwright: await page.locator('.article-card').first().click()
+        // -------------------------------------------------------------------
+        await tester.tap(find.byType(ListTile).first);
+        await tester.pumpAndSettle();
+
+        // -------------------------------------------------------------------
+        // STEP 5 — Verify history count updated to 1
+        // -------------------------------------------------------------------
+        expect(find.textContaining('History: 1'), findsOneWidget);
+
+        // -------------------------------------------------------------------
+        // STEP 6 — Switch to the History tab
+        //
+        // `find.text('History')` matches the Tab label. Tapping it switches
+        // the TabBarView to show _HistoryView.
+        //
+        // Playwright: await page.click('[role="tab"]:has-text("History")')
+        // -------------------------------------------------------------------
+        await tester.tap(find.text('History'));
+        await tester.pumpAndSettle();
+
+        // -------------------------------------------------------------------
+        // STEP 7 — Verify the tapped article title appears in the History tab
+        //
+        // We don't know the exact article title, but we know at least one
+        // ListTile should render in the History tab (the article we tapped).
+        // -------------------------------------------------------------------
+        expect(find.byType(ListTile), findsOneWidget);
+      },
+    );
+
+    // -------------------------------------------------------------------------
+    // TEST: Error state — searching for a nonexistent city shows an error
+    //
+    // The geocoding API returns no results for gibberish input, so the app
+    // throws 'City not found: "xyzxyzxyz"' and surfaces it in the UI.
+    // This tests the full error path through the Riverpod state:
+    //   fetchByCity → geocodeCity throws → state.error is set → UI shows error
+    //
+    // React analogy: dispatching an async thunk that rejects, and asserting
+    // the error boundary / error state renders.
+    // -------------------------------------------------------------------------
+    testWidgets(
+      'should display an error message when searching for a nonexistent city',
+      (WidgetTester tester) async {
+        // -------------------------------------------------------------------
+        // STEP 1 — Launch the app
+        // -------------------------------------------------------------------
+        app.main();
+        await tester.pumpAndSettle();
+
+        // -------------------------------------------------------------------
+        // STEP 2 — Search for a nonsense city name
+        //
+        // Playwright: await page.fill('[data-testid="city-input"]', 'xyzxyzxyz')
+        // -------------------------------------------------------------------
+        final cityInputFinder = find.byKey(const Key('city_input'));
+        await tester.enterText(cityInputFinder, 'xyzxyzxyz');
+        await tester.pump();
+
+        final searchButtonFinder = find.byKey(const Key('search_button'));
+        await tester.tap(searchButtonFinder);
+        await tester.pump();
+
+        // Loading spinner should appear while the API call is in flight.
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Wait for the geocoding API to respond (and fail).
+        await tester.pumpAndSettle(const Duration(seconds: 15));
+
+        // -------------------------------------------------------------------
+        // STEP 3 — Assert error state
+        //
+        // The spinner should be gone and an error message should be visible.
+        // The error text comes from ApiService.geocodeCity:
+        //   'City not found: "xyzxyzxyz". Please check the spelling.'
+        //
+        // RTL: expect(screen.getByText(/City not found/)).toBeInTheDocument()
+        // -------------------------------------------------------------------
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.textContaining('City not found'), findsOneWidget);
+
+        // -------------------------------------------------------------------
+        // STEP 4 — Assert no articles are shown
+        //
+        // The results list should remain empty — no ListTile widgets.
+        // -------------------------------------------------------------------
+        expect(find.byType(ListTile), findsNothing);
+      },
+    );
   });
 }
