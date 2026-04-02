@@ -953,15 +953,51 @@ class _Footer extends StatelessWidget {
     // NOTE: Do NOT wrap in Center here — bottomNavigationBar gives loose height
     // constraints, and Center expands to fill all of them, leaving the body 0px tall.
     // textAlign: TextAlign.center achieves the same visual result safely.
+    // Row keeps the footer text centred without using Center (which would expand
+    // to fill the full bottomNavigationBar height and collapse the body).
+    // "made by " is plain text; "Ivana" is a GestureDetector — same pattern as
+    // wrapping a <span onClick={...}> inside a <p> in React.
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Text(
-        'made by Ivana',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-          fontSize: 14,
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'made by ',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+              fontSize: 14,
+            ),
+          ),
+
+      //     Semantics(
+      // // Compose a rich accessible label for each card — equivalent to:
+      // //   aria-label={`${title}. ${dist}m away. ${visited ? 'Visited.' : 'Tap to open.'}`}
+      // label: '${article.title}. '
+      //     '${article.dist.toStringAsFixed(0)} metres away. '
+      //     '${isVisited ? 'Already visited.' : 'Tap to open in browser.'}',
+      // button: true,
+          // GestureDetector wraps only "Ivana" so only that word is tappable.
+          // Equivalent to: <a href="https://google.com" target="_blank">Ivana</a>
+          GestureDetector(
+            onTap: () async {
+              final uri = Uri.parse('https://www.google.com');
+              if (await canLaunchUrl(uri)) {
+                // LaunchMode.externalApplication = target="_blank" — opens in browser.
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: Text(
+              'Ivana',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 14,
+                decoration: TextDecoration.underline,
+                decorationColor: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1000,6 +1036,7 @@ class _ThemeModeButton extends ConsumerWidget {
     };
 
     return IconButton(
+      key: const Key('theme_mode_button'), // test selector → find.byKey(const Key('theme_mode_button'))
       icon: Icon(icon, color: Theme.of(context).colorScheme.onPrimary),
       tooltip: tooltip,
       // `ref.read` (not `ref.watch`) inside event handlers — same rule as always.

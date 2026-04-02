@@ -3,7 +3,14 @@
     "allow": [
       "Bash(flutter pub:*)",
       "Bash(flutter analyze:*)",
-      "Bash(flutter --version)"
+      "Bash(flutter --version)",
+      "Bash(flutter test:*)",
+      "Bash(xcode-select:*)",
+      "Bash(flutter devices:*)",
+      "Bash(flutter run:*)",
+      "Bash(flutter build:*)",
+      "Bash(flutter install:*)",
+      "Bash(dart run:*)"
     ]
   }
 }

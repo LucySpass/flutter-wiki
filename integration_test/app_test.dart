@@ -182,5 +182,81 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsNothing);
       },
     );
+
+    // -------------------------------------------------------------------------
+    // TEST: Theme mode switcher cycles system → light → dark → system
+    //
+    // The `_ThemeModeButton` IconButton has `key: const Key('theme_mode_button')`
+    // so we can locate it without relying on icon type or position in the tree.
+    //
+    // Each tap mutates `themeModeProvider` (a Riverpod StateProvider) and the
+    // button rebuilds with a new tooltip — equivalent to checking
+    //   expect(button).toHaveAccessibleName('Switch to dark theme')
+    // in React Testing Library after a state update.
+    //
+    // We use `find.byTooltip()` to assert the new tooltip text rather than
+    // inspecting the provider value directly — tests should exercise the UI,
+    // not the internals (same philosophy as RTL's "test what the user sees").
+    // -------------------------------------------------------------------------
+    testWidgets(
+      'theme mode button should cycle through system → light → dark → system',
+      (WidgetTester tester) async {
+        // -------------------------------------------------------------------
+        // STEP 1 — Launch the app
+        // -------------------------------------------------------------------
+        app.main();
+        await tester.pumpAndSettle();
+
+        // Locate the theme toggle button by its stable Key.
+        // Playwright: page.getByTestId('theme-mode-button')
+        // RTL:        screen.getByTestId('theme-mode-button')
+        final themeBtnFinder = find.byKey(const Key('theme_mode_button'));
+        expect(themeBtnFinder, findsOneWidget);
+
+        // -------------------------------------------------------------------
+        // STEP 2 — Assert initial state: system theme
+        //
+        // `ThemeMode.system` → tooltip is 'Switch to light theme'.
+        // `find.byTooltip()` locates any widget whose tooltip matches exactly.
+        // RTL equivalent: expect(btn).toHaveAttribute('title', 'Switch to light theme')
+        // -------------------------------------------------------------------
+        expect(find.byTooltip('Switch to light theme'), findsOneWidget);
+
+        // -------------------------------------------------------------------
+        // STEP 3 — Tap once: system → light
+        //
+        // `ref.read(themeModeProvider.notifier).state = ThemeMode.light` fires
+        // inside `onPressed`. `pump()` processes one frame so the provider
+        // notifies its listeners and the button rebuilds.
+        // Playwright: await page.click('[data-testid="theme-mode-button"]')
+        // -------------------------------------------------------------------
+        await tester.tap(themeBtnFinder);
+        await tester.pump(); // one frame — provider updates, button rebuilds
+
+        // Tooltip should now read 'Switch to dark theme' (light mode active).
+        expect(find.byTooltip('Switch to dark theme'), findsOneWidget);
+        expect(find.byTooltip('Switch to light theme'), findsNothing);
+
+        // -------------------------------------------------------------------
+        // STEP 4 — Tap again: light → dark
+        // -------------------------------------------------------------------
+        await tester.tap(themeBtnFinder);
+        await tester.pump();
+
+        // Tooltip should now read 'Follow system theme' (dark mode active).
+        expect(find.byTooltip('Follow system theme'), findsOneWidget);
+        expect(find.byTooltip('Switch to dark theme'), findsNothing);
+
+        // -------------------------------------------------------------------
+        // STEP 5 — Tap again: dark → system (full cycle complete)
+        // -------------------------------------------------------------------
+        await tester.tap(themeBtnFinder);
+        await tester.pump();
+
+        // Back to 'Switch to light theme' — we've come full circle.
+        expect(find.byTooltip('Switch to light theme'), findsOneWidget);
+        expect(find.byTooltip('Follow system theme'), findsNothing);
+      },
+    );
   });
 }
