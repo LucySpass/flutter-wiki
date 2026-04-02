@@ -1,6 +1,6 @@
 {
-    "name": "flutter_wiki",
-    "short_name": "flutter_wiki",
+    "name": "Fluwiki",
+    "short_name": "Fluwiki",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
