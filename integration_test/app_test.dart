@@ -110,7 +110,7 @@ void main() {
         await tester.pump();
 
         // -------------------------------------------------------------------
-        // STEP 4 — Tap the "Search City" button
+        // STEP 4 — Tap the "Search Location" button
         //
         // Playwright: await page.click('[data-testid="search-button"]')
         // Cypress:    cy.get('[data-testid="search-button"]').click()

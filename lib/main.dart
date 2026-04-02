@@ -2,20 +2,27 @@
 // lib/main.dart — UI Layer
 //
 // Widget tree overview:
-//   ProviderScope                  ← Riverpod root (like Redux <Provider>)
-//   └─ WikipediaExplorerApp        ← MaterialApp setup (theme + router)
-//      └─ HomeScreen               ← ConsumerWidget (reads global state)
-//         ├─ AppBar
-//         │  ├─ _StatsBar          ← API call count + history length
-//         │  └─ TabBar             ← Explore / History tab switcher
-//         └─ TabBarView
-//            ├─ [Explore tab]
-//            │  ├─ _SearchControls ← GPS button + location text input
-//            │  └─ _ResultsView    ← loading / error / article list or grid
-//            │     └─ _ArticleCard ← individual list/grid item
-//            └─ [History tab]
-//               └─ _HistoryView   ← previously visited articles
-//                  └─ _HistoryCard ← individual history item
+//   ProviderScope                        ← Riverpod root (like Redux <Provider>)
+//   └─ WikipediaExplorerApp              ← ConsumerWidget; MaterialApp with light/dark themes
+//      └─ HomeScreen                     ← ConsumerWidget; reads global appProvider state
+//         └─ DefaultTabController        ← manages selected tab index via InheritedWidget
+//            └─ Scaffold
+//               ├─ appBar: AppBar
+//               │  ├─ title: Row
+//               │  │  ├─ Text 'Wikipedia Explorer'
+//               │  │  └─ _ThemeModeButton    ← cycles system / light / dark theme
+//               │  └─ bottom: PreferredSize
+//               │     ├─ _StatsBar           ← API call count + history length
+//               │     └─ TabBar              ← Explore / History tab switcher
+//               ├─ body: LayoutBuilder → Align → SizedBox (maxWidth 1300) → TabBarView
+//               │  ├─ [Explore tab] Column
+//               │  │  ├─ _SearchControls     ← GPS button + location text input
+//               │  │  └─ _ResultsView        ← loading / error / empty / list or grid
+//               │  │     └─ _ArticleCard     ← individual list/grid item
+//               │  └─ [History tab]
+//               │     └─ _HistoryView        ← previously visited articles
+//               │        └─ _HistoryCard     ← individual history item
+//               └─ bottomNavigationBar: _Footer  ← 'made by Ivana', always visible
 // =============================================================================
 
 import 'package:flutter/material.dart';
@@ -35,6 +42,12 @@ import 'state/app_state.dart';
 //   600 px ≤ width < 1024  → 2 columns (phone landscape / tablet)
 //   width ≥ 1024 px        → 3 columns (desktop / wide tablet)
 // =============================================================================
+// Maximum width for body content — equivalent to CSS max-width + margin: 0 auto.
+const double _kMaxContentWidth = 1300;
+// Height of the stats bar strip shown between the toolbar and the tab bar.
+const double _kStatsBarHeight = 32.0;
+const String _mainTitle = "Wikipedia Explorer";
+
 int _columnCount(double width) {
   if (width >= 1024) return 3;
   if (width >= 600) return 2;
@@ -67,32 +80,63 @@ void main() {
 }
 
 // =============================================================================
+// THEME MODE PROVIDER
+//
+// A `StateProvider` holds a single mutable value with no extra logic — the
+// simplest Riverpod primitive, equivalent to a Zustand store that only does:
+//   const useThemeMode = create(() => ({ mode: ThemeMode.system, set }))
+//
+// Starts at `ThemeMode.system` (follows the OS). The toggle button cycles:
+//   system → light → dark → system → …
+//
+// Writing to it from anywhere:
+//   ref.read(themeModeProvider.notifier).state = ThemeMode.dark;
+// =============================================================================
+final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
+
+// =============================================================================
 // ROOT APP WIDGET
 //
-// `StatelessWidget` = a pure functional React component with no local state:
-//   const WikipediaExplorerApp: React.FC = () => <MaterialApp ... />
+// `ConsumerWidget` (was StatelessWidget) so it can watch `themeModeProvider`
+// and pass the live value down to MaterialApp.
 //
 // `build(BuildContext context)` is the render method / JSX return value.
 // `context` provides access to the theme, navigator, locale, etc. —
 // similar to React's Context API, but available implicitly everywhere.
 // =============================================================================
-class WikipediaExplorerApp extends StatelessWidget {
+class WikipediaExplorerApp extends ConsumerWidget {
   const WikipediaExplorerApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watches the provider — rebuilds MaterialApp whenever the user toggles
+    // the theme. Equivalent to: const themeMode = useThemeMode(s => s.mode)
+    final themeMode = ref.watch(themeModeProvider);
     // `MaterialApp` is the root scaffold for a Material Design app.
     // Equivalent to wrapping your app with a Router + ThemeProvider in React:
-    //   <ThemeProvider theme={theme}>
+    //   <ThemeProvider theme={themeMode}>
     //     <BrowserRouter><App /></BrowserRouter>
     //   </ThemeProvider>
     return MaterialApp(
-      title: 'Wikipedia Explorer',
+      title: _mainTitle,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
+      // `darkTheme` = the stylesheet applied when the OS is in dark mode.
+      // `ColorScheme.fromSeed(..., brightness: Brightness.dark)` derives a
+      // full dark palette from the same seed — same brand feel, dark surface.
+      // Equivalent to a CSS `@media (prefers-color-scheme: dark) { ... }` block.
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      // Live value from the provider — switches theme without a hot restart.
+      themeMode: themeMode,
       home: const HomeScreen(),
     );
   }
@@ -136,22 +180,36 @@ class HomeScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.primary,
-          title: const Text(
-            'Wikipedia Explorer',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          title: Row(
+            children: [
+              Text(
+                _mainTitle,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+              const Spacer(), // pushes button to the right
+              const _ThemeModeButton(),
+            ],
           ),
           // Stack the stats bar + tab bar inside the AppBar bottom slot.
-          // PreferredSize height = stats row (32) + TabBar row (46).
+          // Heights use named constants so the value is defined in one place.
+          // `kTextTabBarHeight` (46) is Flutter's built-in TabBar height constant.
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(32 + 46),
+            preferredSize: const Size.fromHeight(_kStatsBarHeight + kTextTabBarHeight),
             child: Column(
               children: [
                 _StatsBar(appState: appState),
-                const TabBar(
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Colors.white70,
-                  indicatorColor: Colors.white,
-                  tabs: [
+                TabBar(
+                  labelColor: Theme.of(context).colorScheme.onPrimary,
+                  unselectedLabelColor: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withAlpha(153), // 60% opacity
+                  indicatorColor: Theme.of(context).colorScheme.onPrimary,
+                  tabs: const [
                     Tab(icon: Icon(Icons.explore), text: 'Explore'),
                     Tab(icon: Icon(Icons.history), text: 'History'),
                   ],
@@ -160,31 +218,40 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
         ),
-        // `TabBarView` renders the widget for the currently selected tab.
-        // Equivalent to a React conditional render driven by state:
-        //   {tab === 0 ? <ExploreView /> : <HistoryView />}
-        //
-        // Unlike a conditional render, TabBarView KEEPS both widgets alive
-        // in the widget tree once visited — similar to CSS `display: none`
-        // vs truly unmounting a component.
-        body: TabBarView(
-          children: [
-            // Tab 0 — Explore
-            Column(
-              children: [
-                _SearchControls(),
-                const Divider(height: 1),
-                // `Expanded` tells the Column to give all remaining vertical space to this child.
-                // Equivalent to: `flex: 1` or `flex-grow: 1` in CSS flexbox.
-                Expanded(
-                  child: _ResultsView(appState: appState),
-                ),
-              ],
+        // `LayoutBuilder` captures Scaffold's tight body constraints — that
+        // lets us clamp the width to _kMaxContentWidth while passing the exact
+        // height down to TabBarView (which needs a tight, bounded height to
+        // lay out its PageView children correctly).
+        // Equivalent to CSS: .body { max-width: 1300px; margin: 0 auto; height: 100%; }
+        body: LayoutBuilder(
+          builder: (context, constraints) => Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: constraints.maxWidth.clamp(0.0, _kMaxContentWidth),
+              height: constraints.maxHeight,
+              child: TabBarView(
+                children: [
+                  // Tab 0 — Explore
+                  Column(
+                    children: [
+                      _SearchControls(),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: _ResultsView(appState: appState),
+                      ),
+                    ],
+                  ),
+                  // Tab 1 — History
+                  _HistoryView(history: appState.history),
+                ],
+              ),
             ),
-            // Tab 1 — History
-            _HistoryView(history: appState.history),
-          ],
+          ),
         ),
+        // `bottomNavigationBar` is a Scaffold slot that sits below the body.
+        // Scaffold handles safe-area insets and keyboard avoidance automatically.
+        // Equivalent to a sticky `position: fixed; bottom: 0` footer in CSS.
+        bottomNavigationBar: const _Footer(),
       ),
     );
   }
@@ -228,18 +295,20 @@ class _StatsBar extends StatelessWidget {
             ExcludeSemantics(
               child: Text(
                 'API Calls: ${appState.apiCallCount}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
               ),
             ),
             ExcludeSemantics(
               child: Text(
                 'History: ${appState.history.length}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
               ),
             ),
@@ -292,6 +361,17 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
   // Read the current text with `_controller.text`.
   final TextEditingController _controller = TextEditingController();
 
+  // `initState()` = React's `useEffect(() => { ... }, [])` with an empty
+  // dependency array — runs once after the widget is first inserted.
+  // We attach a listener so the clear button appears/disappears as the user
+  // types. `setState(() {})` triggers a rebuild without changing any value —
+  // the new `_controller.text` is read during the next `build()` call.
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() => setState(() {}));
+  }
+
   // `dispose()` = React's useEffect cleanup function:
   //   useEffect(() => { return () => controller.dispose(); }, [])
   //
@@ -310,7 +390,8 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
     // This is separate from app-level permissions.
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      _showSnackBar('Location services are disabled. Enable GPS in device settings.');
+      _showSnackBar(
+          'Location services are disabled. Enable GPS in device settings.');
       return; // `return` inside a Future = `return` inside an async JS function
     }
 
@@ -403,7 +484,8 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
               // Screen readers will announce: "Use my current GPS location..., button"
               Semantics(
                 button: true,
-                label: 'Use my current GPS location to find nearby Wikipedia articles',
+                label:
+                    'Use my current GPS location to find nearby Wikipedia articles',
                 child: ElevatedButton.icon(
                   // `key` is a test selector — like `data-testid="location-button"` in React Testing Library.
                   // The integration test uses `find.byKey(const Key('location_button'))` to find this widget.
@@ -414,7 +496,7 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
                   label: const Text('Use My Location'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
@@ -448,18 +530,30 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
                 textField: true,
                 label: 'Location text input',
                 child: TextField(
-                  key: const Key('city_input'), // test selector → data-testid="city-input"
+                  key: const Key(
+                      'city_input'), // test selector → data-testid="city-input"
                   controller: _controller,
                   enabled: !isLoading,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Enter a location',
                     hintText: 'e.g. Paris, Tokyo, New York',
-                    prefixIcon: Icon(Icons.location_city),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.location_city),
+                    border: const OutlineInputBorder(),
+                    // Show a clear (×) button only when there is text.
+                    // Equivalent to a controlled <input> with a conditional
+                    // clear icon: {value && <button onClick={() => setValue('')} />}
+                    suffixIcon: _controller.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            tooltip: 'Clear',
+                            onPressed: _controller.clear,
+                          )
+                        : null,
                   ),
                   // `onSubmitted` fires when the user presses Enter/Done on the keyboard.
                   // Equivalent to: `onKeyDown={e => e.key === 'Enter' && handleSearch()}`
-                  onSubmitted: isLoading ? null : (_) => _handleLocationSearch(),
+                  onSubmitted:
+                      isLoading ? null : (_) => _handleLocationSearch(),
                   textInputAction: TextInputAction.search,
                 ),
               ),
@@ -471,7 +565,8 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
               // ---------------------------------------------------------------
               Semantics(
                 button: true,
-                label: 'Search for Wikipedia articles near the entered location',
+                label:
+                    'Search for Wikipedia articles near the entered location',
                 child: ElevatedButton(
                   key: const Key('search_button'), // test selector
                   onPressed: isLoading ? null : _handleLocationSearch,
@@ -507,8 +602,6 @@ class _ResultsView extends StatelessWidget {
     if (appState.isLoading) {
       return Center(
         child: Semantics(
-          // `liveRegion: true` tells screen readers to announce this change
-          // dynamically — like `aria-live="polite"` in HTML.
           liveRegion: true,
           label: 'Loading Wikipedia articles, please wait',
           child: const CircularProgressIndicator(),
@@ -572,50 +665,34 @@ class _ResultsView extends StatelessWidget {
     // ---- STATE 4: Articles list / grid -----------------------------------
     // `LayoutBuilder` provides the parent's constraints at build time —
     // equivalent to a CSS container query or a ResizeObserver callback.
-    // We use the available width to pick the column count.
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = _columnCount(constraints.maxWidth);
+        final articles = appState.articles;
 
-        // Single-column on narrow screens → plain ListView.
-        // ListView has better scroll defaults and doesn't require a fixed
-        // item height — equivalent to a simple CSS `flex-direction: column`.
         if (columns == 1) {
           return Semantics(
-            label: '${appState.articles.length} Wikipedia articles found nearby.',
+            label: '${articles.length} Wikipedia articles found nearby.',
             child: ListView.builder(
-              itemCount: appState.articles.length,
-              itemBuilder: (context, index) =>
-                  _ArticleCard(article: appState.articles[index]),
+              itemCount: articles.length,
+              itemBuilder: (_, i) => _ArticleCard(article: articles[i]),
             ),
           );
         }
 
-        // Multi-column on wider screens → GridView.
-        // `SliverGridDelegateWithFixedCrossAxisCount` = CSS Grid:
-        //   grid-template-columns: repeat(columns, 1fr);
-        //   aspect-ratio: 1 / (1 / childAspectRatio);
-        //
-        // `compact: true` trims card margins and clips long titles so content
-        // fits within the fixed grid cell height.
         return Semantics(
-          label: '${appState.articles.length} Wikipedia articles found nearby.',
+          label: '${articles.length} Wikipedia articles found nearby.',
           child: GridView.builder(
             padding: const EdgeInsets.all(8),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: columns,
-              // childAspectRatio = width ÷ height.
-              // 3.5 gives ~95–115 px tall cells across common tablet/desktop widths,
-              // enough to render the card title + distance without clipping.
               childAspectRatio: 3.5,
               crossAxisSpacing: 4,
               mainAxisSpacing: 4,
             ),
-            itemCount: appState.articles.length,
-            itemBuilder: (context, index) => _ArticleCard(
-              article: appState.articles[index],
-              compact: true,
-            ),
+            itemCount: articles.length,
+            itemBuilder: (_, i) =>
+                _ArticleCard(article: articles[i], compact: true),
           ),
         );
       },
@@ -673,10 +750,10 @@ class _ArticleCard extends ConsumerWidget {
             : null,
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: isVisited
-                ? Colors.grey
-                : Theme.of(context).colorScheme.primary,
-            child: const Icon(Icons.article, color: Colors.white, size: 20),
+            backgroundColor:
+                isVisited ? Colors.grey : Theme.of(context).colorScheme.primary,
+            child: Icon(Icons.article,
+                color: Theme.of(context).colorScheme.onPrimary, size: 20),
           ),
           title: Text(
             article.title,
@@ -685,7 +762,10 @@ class _ArticleCard extends ConsumerWidget {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               color: isVisited
-                  ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)
+                  ? Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.5)
                   : null,
             ),
           ),
@@ -763,14 +843,9 @@ class _HistoryView extends StatelessWidget {
     }
 
     // ---- Non-empty: responsive list / grid --------------------------------
-    // Reuses the same breakpoints as _ResultsView — keeps behaviour consistent
-    // across both tabs.
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = _columnCount(constraints.maxWidth);
-        // Show most-recently visited first — like a reverse-chronological feed.
-        // `.reversed` returns a lazy Iterable; `.toList()` materialises it.
-        // TS equivalent: [...history].reverse()
         final items = history.reversed.toList();
 
         if (columns == 1) {
@@ -778,7 +853,7 @@ class _HistoryView extends StatelessWidget {
             label: '${history.length} visited articles.',
             child: ListView.builder(
               itemCount: items.length,
-              itemBuilder: (_, index) => _HistoryCard(title: items[index]),
+              itemBuilder: (_, i) => _HistoryCard(title: items[i]),
             ),
           );
         }
@@ -794,8 +869,7 @@ class _HistoryView extends StatelessWidget {
               mainAxisSpacing: 4,
             ),
             itemCount: items.length,
-            itemBuilder: (_, index) =>
-                _HistoryCard(title: items[index], compact: true),
+            itemBuilder: (_, i) => _HistoryCard(title: items[i], compact: true),
           ),
         );
       },
@@ -833,7 +907,8 @@ class _HistoryCard extends StatelessWidget {
         child: ListTile(
           leading: CircleAvatar(
             backgroundColor: Theme.of(context).colorScheme.secondary,
-            child: const Icon(Icons.history, color: Colors.white, size: 20),
+            child: Icon(Icons.history,
+                color: Theme.of(context).colorScheme.onSecondary, size: 20),
           ),
           title: Text(
             title,
@@ -863,6 +938,74 @@ class _HistoryCard extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+// =============================================================================
+// FOOTER — shown at the bottom of the results scroll
+// =============================================================================
+class _Footer extends StatelessWidget {
+  const _Footer();
+
+  @override
+  Widget build(BuildContext context) {
+    // NOTE: Do NOT wrap in Center here — bottomNavigationBar gives loose height
+    // constraints, and Center expands to fill all of them, leaving the body 0px tall.
+    // textAlign: TextAlign.center achieves the same visual result safely.
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Text(
+        'made by Ivana',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// THEME MODE BUTTON — AppBar toggle (system → light → dark → system → …)
+//
+// `ConsumerWidget` because it needs to both READ the current mode (to pick the
+// right icon) and WRITE a new mode (on tap).
+//
+// The three-state cycle mirrors a common web pattern:
+//   const [theme, setTheme] = useState<'system'|'light'|'dark'>('system')
+//   const nextTheme = { system: 'light', light: 'dark', dark: 'system' }[theme]
+// =============================================================================
+class _ThemeModeButton extends ConsumerWidget {
+  const _ThemeModeButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(themeModeProvider);
+
+    // Map each mode to the icon that represents it and the tooltip explaining
+    // what tapping will do next.
+    final (IconData icon, String tooltip) = switch (mode) {
+      ThemeMode.system => (Icons.brightness_auto, 'Switch to light theme'),
+      ThemeMode.light => (Icons.light_mode, 'Switch to dark theme'),
+      ThemeMode.dark => (Icons.dark_mode, 'Follow system theme'),
+    };
+
+    // Cycle: system → light → dark → system
+    final ThemeMode next = switch (mode) {
+      ThemeMode.system => ThemeMode.light,
+      ThemeMode.light => ThemeMode.dark,
+      ThemeMode.dark => ThemeMode.system,
+    };
+
+    return IconButton(
+      icon: Icon(icon, color: Theme.of(context).colorScheme.onPrimary),
+      tooltip: tooltip,
+      // `ref.read` (not `ref.watch`) inside event handlers — same rule as always.
+      // Writing `.state =` on a StateProvider notifier is like calling Zustand's
+      // `set()`: all watchers of `themeModeProvider` re-render immediately.
+      onPressed: () => ref.read(themeModeProvider.notifier).state = next,
     );
   }
 }
