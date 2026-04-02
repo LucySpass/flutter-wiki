@@ -198,7 +198,8 @@ class HomeScreen extends ConsumerWidget {
           // Heights use named constants so the value is defined in one place.
           // `kTextTabBarHeight` (46) is Flutter's built-in TabBar height constant.
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(_kStatsBarHeight + kTextTabBarHeight),
+            preferredSize:
+                const Size.fromHeight(_kStatsBarHeight + kTextTabBarHeight),
             child: Column(
               children: [
                 _StatsBar(appState: appState),
@@ -965,7 +966,10 @@ class _Footer extends StatelessWidget {
           Text(
             'by ',
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.4),
               fontSize: 14,
             ),
           ),
@@ -1030,7 +1034,8 @@ class _ThemeModeButton extends ConsumerWidget {
     };
 
     return IconButton(
-      key: const Key('theme_mode_button'), // test selector → find.byKey(const Key('theme_mode_button'))
+      key: const Key(
+          'theme_mode_button'), // test selector → find.byKey(const Key('theme_mode_button'))
       icon: Icon(icon, color: Theme.of(context).colorScheme.onPrimary),
       tooltip: tooltip,
       // `ref.read` (not `ref.watch`) inside event handlers — same rule as always.

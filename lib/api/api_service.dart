@@ -82,7 +82,8 @@ class Article {
   // `@override` = same as TypeScript's `override` keyword (or just overriding toString).
   // String interpolation `$title` = template literals `${title}` in JS.
   @override
-  String toString() => 'Article(title: $title, dist: ${dist.toStringAsFixed(0)}m)';
+  String toString() =>
+      'Article(title: $title, dist: ${dist.toStringAsFixed(0)}m)';
 }
 
 // =============================================================================
