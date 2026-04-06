@@ -126,3 +126,53 @@ All user-facing strings are hardcoded in English. Move them into `lib/l10n/app_e
 Things like `gsradius=5000`, `gslimit=20`, breakpoints (`600`, `1024`), the Wikipedia base URL, error messages — move them into a `lib/constants.dart` file. Easier to tweak, easier to test.
 
 ---
+
+## 9. Switch from `http` to `dio` package
+
+Replace the `http` package with `dio` for production-ready networking features:
+
+```dart
+// pubspec.yaml
+dependencies:
+  dio: ^5.4.0
+
+// lib/api/api_service.dart
+import 'package:dio/dio.dart';
+
+class ApiService {
+  static final _dio = Dio(BaseOptions(
+    connectTimeout: Duration(seconds: 10),
+    receiveTimeout: Duration(seconds: 10),
+  ));
+
+  static Future<List<Article>> fetchNearbyArticles(double lat, double lng) async {
+    final response = await _dio.get(
+      'https://en.wikipedia.org/w/api.php',
+      queryParameters: {
+        'action': 'query',
+        'list': 'geosearch',
+        'gscoord': '$lat|$lng',
+        'gsradius': '5000',
+        'gslimit': '20',
+        'format': 'json',
+        'origin': '*',
+      },
+    );
+
+    // response.data is already parsed JSON (no jsonDecode needed)
+    final geosearch = response.data['query']['geosearch'] as List;
+    return geosearch.map((item) => Article.fromJson(item)).toList();
+  }
+}
+```
+
+**Benefits:**
+- Automatic JSON parsing (no manual `jsonDecode`)
+- Built-in timeout handling
+- Interceptors for logging, retry logic, or auth headers
+- Better error messages and typed exceptions
+- Request cancellation support
+
+**Why not now**: The `http` package is simpler for learning and sufficient for this assignment's requirements. `dio` adds ~100KB to the bundle and more API surface to understand.
+
+---
