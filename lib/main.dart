@@ -46,7 +46,9 @@ import 'state/app_state.dart';
 const double _kMaxContentWidth = 1300;
 // Height of the stats bar strip shown between the toolbar and the tab bar.
 const double _kStatsBarHeight = 32.0;
-const String _mainTitle = "Wikipedia Explorer";
+const String _kMainTitle = "Wikipedia Explorer";
+// Brand color for theme seed — compile-time constant like #008080 in CSS
+const Color _kBrandColor = Colors.teal;
 
 int _columnCount(double width) {
   if (width >= 1024) return 3;
@@ -118,10 +120,10 @@ class WikipediaExplorerApp extends ConsumerWidget {
     //     <BrowserRouter><App /></BrowserRouter>
     //   </ThemeProvider>
     return MaterialApp(
-      title: _mainTitle,
+      title: _kMainTitle,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: _kBrandColor),
         useMaterial3: true,
       ),
       // `darkTheme` = the stylesheet applied when the OS is in dark mode.
@@ -130,7 +132,7 @@ class WikipediaExplorerApp extends ConsumerWidget {
       // Equivalent to a CSS `@media (prefers-color-scheme: dark) { ... }` block.
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
+          seedColor: _kBrandColor,
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
@@ -183,7 +185,7 @@ class HomeScreen extends ConsumerWidget {
           title: Row(
             children: [
               Text(
-                _mainTitle,
+                _kMainTitle,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
@@ -975,10 +977,10 @@ class _Footer extends StatelessWidget {
           ),
           // TextButton = <button> in HTML. Already handles ripple, semantics,
           // and focus/hover states out of the box — no manual InkWell needed.
-          // Equivalent to: <a href="https://www.linkedin.com/in/ivana-begovic/" target="_blank">Ivana</a>
+          // Equivalent to: <a href="https://github.com/LucySpass" target="_blank">Ivana</a>
           TextButton(
             onPressed: () => launchUrl(
-              Uri.parse('https://www.linkedin.com/in/ivana-begovic/'),
+              Uri.parse('https://github.com/LucySpass'),
               mode: LaunchMode.externalApplication,
             ),
             style: TextButton.styleFrom(
