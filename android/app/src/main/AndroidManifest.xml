@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- INTERNET permission required for all HTTP calls (Wikipedia + Open-Meteo APIs).
+         Flutter debug builds inject this automatically, but release/profile builds
+         do NOT — the app must declare it explicitly here or the OS blocks all
+         network access with "Failed host lookup" SocketException. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <!-- Location permissions required by the geolocator plugin.
          Without these, the "Use My Location" button will crash on Android.
          ACCESS_FINE_LOCATION = GPS-level precision.
@@ -38,15 +44,26 @@
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
-
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <!-- Package visibility queries — required since Android 11 (API 30).
+         Apps must explicitly declare which intents they want to query, or
+         canLaunchUrl() / queryIntentActivities() returns nothing. See:
+         https://developer.android.com/training/package-visibility -->
     <queries>
+        <!-- PROCESS_TEXT — used by the Flutter engine's ProcessTextPlugin. -->
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- HTTPS VIEW — required by url_launcher's canLaunchUrl() so it can
+             see the user's installed browsers. Without this, canLaunchUrl()
+             returns false on Android 11+ even when launchUrl() would succeed. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
         </intent>
     </queries>
 </manifest>

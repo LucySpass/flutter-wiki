@@ -88,10 +88,6 @@ class AppState {
 //   3. Keeps business logic completely separate from the UI
 // =============================================================================
 class AppNotifier extends Notifier<AppState> {
-  String? _lastCity;
-  double? _lastLat;
-  double? _lastLng;
-
   @override
   AppState build() => AppState.initial();
 
@@ -99,16 +95,11 @@ class AppNotifier extends Notifier<AppState> {
   // ACTION: Fetch articles using GPS coordinates (Path A — location button)
   // ---------------------------------------------------------------------------
   Future<void> fetchByCoordinates(double lat, double lng) async {
-    // Guard: skip the Wikipedia API call if coordinates haven't changed.
-    if (lat == _lastLat && lng == _lastLng) return;
-
     state = state.copyWith(isLoading: true, error: null);
 
     try {
       final articles = await ApiService.fetchNearbyArticles(lat, lng);
 
-      _lastLat = lat;
-      _lastLng = lng;
       state = state.copyWith(
         isLoading: false,
         articles: articles,
@@ -131,9 +122,6 @@ class AppNotifier extends Notifier<AppState> {
   //   2. fetchNearbyArticles() → uses those coords to search Wikipedia
   // ---------------------------------------------------------------------------
   Future<void> fetchByCity(String city) async {
-    // Guard: skip both API calls if this city was the last successful search.
-    if (city == _lastCity) return;
-
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -146,9 +134,6 @@ class AppNotifier extends Notifier<AppState> {
         coords.lng,
       );
 
-      _lastCity = city;
-      _lastLat = coords.lat;
-      _lastLng = coords.lng;
       state = state.copyWith(
         isLoading: false,
         articles: articles,

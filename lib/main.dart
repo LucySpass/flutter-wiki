@@ -283,6 +283,10 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
       desiredAccuracy: LocationAccuracy.low,
     );
 
+    // Clear any text in the location input — the user is using GPS now,
+    // so leaving stale text in the field would be confusing.
+    _controller.clear();
+
     await ref.read(appProvider.notifier).fetchByCoordinates(
           position.latitude,
           position.longitude,
@@ -749,41 +753,46 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'by ',
-            style: TextStyle(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.4),
-              fontSize: 14,
-            ),
-          ),
-          TextButton(
-            onPressed: () => launchUrl(
-              Uri.parse('https://github.com/LucySpass'),
-              mode: LaunchMode.externalApplication,
-            ),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              'Ivana',
+    return SafeArea(
+      top: false,
+      left: false,
+      right: false,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'by ',
               style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.4),
                 fontSize: 14,
-                decoration: TextDecoration.underline,
-                decorationColor: Theme.of(context).colorScheme.primary,
               ),
             ),
-          ),
-        ],
+            TextButton(
+              onPressed: () => launchUrl(
+                Uri.parse('https://github.com/LucySpass'),
+                mode: LaunchMode.externalApplication,
+              ),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Ivana',
+                style: TextStyle(
+                  fontSize: 14,
+                  decoration: TextDecoration.underline,
+                  decorationColor: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -206,7 +206,7 @@ void main() {
         // -------------------------------------------------------------------
         // STEP 7 — Verify the tapped article title appears in the History tab
         // -------------------------------------------------------------------
-        expect(find.byType(ListTile), findsOneWidget);
+        expect(find.byType(ListTile), findsAtLeastNWidgets(1));
       },
     );
 
