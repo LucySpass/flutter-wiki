@@ -31,7 +31,7 @@ A cross-platform Wikipedia Explorer built with Flutter. Discover Wikipedia artic
 | `lib/api/api_service.dart` | API service + Article data model |
 | `integration_test/app_test.dart` | Integration tests — city search, theme switcher, history, error state |
 
-The codebase is annotated with React/TypeScript analogies throughout (JSX to `build()`, `useSelector` to `ref.watch`, Zustand store to Notifier, etc.).
+The branch "learning" is annotated with React/TypeScript analogies throughout (JSX to `build()`, `useSelector` to `ref.watch`, Zustand store to Notifier, etc.).
 
 ## Running the app
 

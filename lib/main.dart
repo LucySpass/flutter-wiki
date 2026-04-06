@@ -33,16 +33,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'api/api_service.dart';
 import 'state/app_state.dart';
 
-// =============================================================================
-// RESPONSIVE BREAKPOINTS
-//
-// Returns the number of result columns based on available width.
-// Equivalent to CSS container queries / media queries:
-//   width < 600 px         → 1 column  (phone portrait)
-//   600 px ≤ width < 1024  → 2 columns (phone landscape / tablet)
-//   width ≥ 1024 px        → 3 columns (desktop / wide tablet)
-// =============================================================================
-// Maximum width for body content — equivalent to CSS max-width + margin: 0 auto.
 const double _kMaxContentWidth = 1300;
 // Height of the stats bar strip shown between the toolbar and the tab bar.
 const double _kStatsBarHeight = 32.0;
@@ -58,20 +48,8 @@ int _columnCount(double width) {
 
 // =============================================================================
 // ENTRY POINT
-//
-// `runApp()` is Flutter's equivalent of:
-//   ReactDOM.createRoot(document.getElementById('root')).render(<App />)
-//
-// `ProviderScope` MUST wrap the entire widget tree — it is the Riverpod
-// equivalent of Redux's `<Provider store={store}>` or React Context's
-// `<MyContext.Provider value={...}>`.
-//
-// Without ProviderScope, any `ref.watch()` call will throw at runtime.
 // =============================================================================
 void main() {
-  // Ensure the Flutter engine bindings are initialised before any platform
-  // channel calls (e.g. permission checks). Equivalent to waiting for
-  // `DOMContentLoaded` before calling browser APIs.
   WidgetsFlutterBinding.ensureInitialized();
 
   runApp(
@@ -83,42 +61,18 @@ void main() {
 
 // =============================================================================
 // THEME MODE PROVIDER
-//
-// A `StateProvider` holds a single mutable value with no extra logic — the
-// simplest Riverpod primitive, equivalent to a Zustand store that only does:
-//   const useThemeMode = create(() => ({ mode: ThemeMode.system, set }))
-//
-// Starts at `ThemeMode.system` (follows the OS). The toggle button cycles:
-//   system → light → dark → system → …
-//
-// Writing to it from anywhere:
-//   ref.read(themeModeProvider.notifier).state = ThemeMode.dark;
 // =============================================================================
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
 
 // =============================================================================
 // ROOT APP WIDGET
-//
-// `ConsumerWidget` (was StatelessWidget) so it can watch `themeModeProvider`
-// and pass the live value down to MaterialApp.
-//
-// `build(BuildContext context)` is the render method / JSX return value.
-// `context` provides access to the theme, navigator, locale, etc. —
-// similar to React's Context API, but available implicitly everywhere.
 // =============================================================================
 class WikipediaExplorerApp extends ConsumerWidget {
   const WikipediaExplorerApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watches the provider — rebuilds MaterialApp whenever the user toggles
-    // the theme. Equivalent to: const themeMode = useThemeMode(s => s.mode)
     final themeMode = ref.watch(themeModeProvider);
-    // `MaterialApp` is the root scaffold for a Material Design app.
-    // Equivalent to wrapping your app with a Router + ThemeProvider in React:
-    //   <ThemeProvider theme={themeMode}>
-    //     <BrowserRouter><App /></BrowserRouter>
-    //   </ThemeProvider>
     return MaterialApp(
       title: _kMainTitle,
       debugShowCheckedModeBanner: false,
@@ -126,10 +80,6 @@ class WikipediaExplorerApp extends ConsumerWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: _kBrandColor),
         useMaterial3: true,
       ),
-      // `darkTheme` = the stylesheet applied when the OS is in dark mode.
-      // `ColorScheme.fromSeed(..., brightness: Brightness.dark)` derives a
-      // full dark palette from the same seed — same brand feel, dark surface.
-      // Equivalent to a CSS `@media (prefers-color-scheme: dark) { ... }` block.
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: _kBrandColor,
@@ -137,46 +87,19 @@ class WikipediaExplorerApp extends ConsumerWidget {
         ),
         useMaterial3: true,
       ),
-      // Live value from the provider — switches theme without a hot restart.
       themeMode: themeMode,
       home: const HomeScreen(),
     );
   }
 }
 
-// =============================================================================
-// HOME SCREEN
-//
-// `ConsumerWidget` extends `StatelessWidget` with one extra parameter: `WidgetRef ref`.
-// `ref` is your handle to the Riverpod store — equivalent to calling:
-//   const appState = useAppStore()          // Zustand
-//   const appState = useSelector(s => s)    // Redux
-//
-// Rule of thumb:
-//   No state needed?              → StatelessWidget
-//   Global state needed?          → ConsumerWidget       (this file)
-//   Local UI state needed?        → StatefulWidget
-//   Both local + global needed?   → ConsumerStatefulWidget (see _SearchControls)
-// =============================================================================
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // `ref.watch(appProvider)` subscribes this widget to ALL AppState changes.
-    // Every time `state =` is called inside AppNotifier, this widget re-renders.
-    //
-    // This is EXACTLY like:
-    //   const appState = useAppStore()           (Zustand — full store)
-    //   const appState = useSelector(s => s.app) (Redux)
     final appState = ref.watch(appProvider);
 
-    // `DefaultTabController` manages the selected-tab index and propagates it
-    // to all descendant `TabBar` and `TabBarView` widgets via InheritedWidget —
-    // equivalent to wrapping children in a React context:
-    //   <TabContext.Provider value={{ tab, setTab }}>
-    //     {children}
-    //   </TabContext.Provider>
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -196,9 +119,6 @@ class HomeScreen extends ConsumerWidget {
               const _ThemeModeButton(),
             ],
           ),
-          // Stack the stats bar + tab bar inside the AppBar bottom slot.
-          // Heights use named constants so the value is defined in one place.
-          // `kTextTabBarHeight` (46) is Flutter's built-in TabBar height constant.
           bottom: PreferredSize(
             preferredSize:
                 const Size.fromHeight(_kStatsBarHeight + kTextTabBarHeight),
@@ -221,11 +141,6 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
         ),
-        // `LayoutBuilder` captures Scaffold's tight body constraints — that
-        // lets us clamp the width to _kMaxContentWidth while passing the exact
-        // height down to TabBarView (which needs a tight, bounded height to
-        // lay out its PageView children correctly).
-        // Equivalent to CSS: .body { max-width: 1300px; margin: 0 auto; height: 100%; }
         body: LayoutBuilder(
           builder: (context, constraints) => Align(
             alignment: Alignment.topCenter,
@@ -251,9 +166,6 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
         ),
-        // `bottomNavigationBar` is a Scaffold slot that sits below the body.
-        // Scaffold handles safe-area insets and keyboard avoidance automatically.
-        // Equivalent to a sticky `position: fixed; bottom: 0` footer in CSS.
         bottomNavigationBar: const _Footer(),
       ),
     );
@@ -262,10 +174,6 @@ class HomeScreen extends ConsumerWidget {
 
 // =============================================================================
 // STATS BAR — pure display widget
-//
-// A StatelessWidget (no state, no actions) that shows the tracked metrics.
-// The underscore prefix makes this class private to this file —
-// equivalent to a non-exported component in a TypeScript module.
 // =============================================================================
 class _StatsBar extends StatelessWidget {
   final AppState appState;
@@ -274,12 +182,6 @@ class _StatsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // `Semantics` is Flutter's equivalent of ARIA attributes in HTML/React:
-    //   <div role="region" aria-label="Statistics dashboard...">
-    //
-    // `container: true` creates a distinct semantic boundary — similar to
-    // adding `role="region"` to a <div>, which screen readers treat as a
-    // separate navigable landmark.
     return Semantics(
       label: 'Statistics dashboard. '
           'Total API calls made: ${appState.apiCallCount}. '
@@ -291,10 +193,6 @@ class _StatsBar extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // `ExcludeSemantics` hides a subtree from accessibility tools.
-            // We already described both values in the parent `Semantics` label,
-            // so individual Text widgets don't need to be read out separately.
-            // HTML equivalent: `aria-hidden="true"`
             ExcludeSemantics(
               child: Text(
                 'API Calls: ${appState.apiCallCount}',
@@ -325,60 +223,26 @@ class _StatsBar extends StatelessWidget {
 // =============================================================================
 // SEARCH CONTROLS
 //
-// Uses `ConsumerStatefulWidget` + `ConsumerState` because it needs BOTH:
-//   • Local UI state: TextEditingController (equivalent to useRef + useState)
-//   • Global store access: ref.watch / ref.read (equivalent to useAppStore)
-//
-// React equivalent of this combination:
-//   const SearchControls = () => {
-//     const [location, setLocation] = useState('');    // local state
-//     const { fetchByCity } = useAppStore();           // global store
-//     const inputRef = useRef<HTMLInputElement>(null);
-//     ...
-//   }
+// Uses `ConsumerStatefulWidget` + `ConsumerState` because it needs BOTH
 // =============================================================================
 class _SearchControls extends ConsumerStatefulWidget {
   @override
   ConsumerState<_SearchControls> createState() => _SearchControlsState();
 }
 
-// `AutomaticKeepAliveClientMixin` tells the parent PageView (used internally
-// by TabBarView) to keep this State alive even when the tab is off-screen.
-//
-// Without it, switching tabs calls dispose() on _SearchControlsState —
-// destroying the TextEditingController and its text — then recreates it
-// from scratch when you come back. Equivalent to a React component being
-// *unmounted* vs kept mounted with `display: none`.
-//
-// With it, the State object is preserved in memory and `build()` is never
-// called with a fresh controller. The one required contract: you MUST call
-// `super.build(context)` at the top of build() so the mixin can send its
-// keep-alive signal up to the PageView.
 class _SearchControlsState extends ConsumerState<_SearchControls>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
-  // `TextEditingController` manages a TextField's text value.
-  // It combines `useRef<HTMLInputElement>` + controlled `value` state in React.
-  // Read the current text with `_controller.text`.
   final TextEditingController _controller = TextEditingController();
 
-  // `initState()` = React's `useEffect(() => { ... }, [])` with an empty
-  // dependency array — runs once after the widget is first inserted.
-  // We attach a listener so the clear button appears/disappears as the user
-  // types. `setState(() {})` triggers a rebuild without changing any value —
-  // the new `_controller.text` is read during the next `build()` call.
   @override
   void initState() {
     super.initState();
     _controller.addListener(() => setState(() {}));
   }
 
-  // `dispose()` = React's useEffect cleanup function:
-  //   useEffect(() => { return () => controller.dispose(); }, [])
-  //
-  // Always dispose controllers to avoid memory leaks when the widget is removed.
   @override
   void dispose() {
     _controller.dispose();
@@ -419,13 +283,6 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
       desiredAccuracy: LocationAccuracy.low,
     );
 
-    // Dispatch the action — equivalent to:
-    //   dispatch(fetchByCoordinates(lat, lng))   (Redux)
-    //   useAppStore.getState().fetchByCoordinates(lat, lng)  (Zustand)
-    //
-    // Use `ref.read` (not `ref.watch`) inside event handlers.
-    // `ref.watch` is for the build() method only — like calling hooks in JSX.
-    // `ref.read` is for outside build() — like calling store methods in onClick.
     await ref.read(appProvider.notifier).fetchByCoordinates(
           position.latitude,
           position.longitude,
@@ -445,8 +302,6 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
   }
 
   void _showSnackBar(String message) {
-    // `ScaffoldMessenger` is the Flutter way to show floating toasts/snackbars.
-    // Equivalent to calling a toast library like `react-hot-toast` or `sonner`.
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -462,16 +317,8 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
     // up to the PageView. Must be called before returning any widget.
     super.build(context);
 
-    // Memoized selector — only re-renders this widget when `isLoading` changes.
-    // Equivalent to Zustand's: `const isLoading = useAppStore(s => s.isLoading)`
-    // or Redux's: `const isLoading = useSelector(s => s.app.isLoading)`
-    //
-    // Without `.select()`, the widget would rebuild on every state change.
     final isLoading = ref.watch(appProvider.select((s) => s.isLoading));
 
-    // `Center` + `ConstrainedBox` limits the form to a readable max width on
-    // tablet and desktop — equivalent to a CSS rule:
-    //   .search-form { max-width: 480px; margin: 0 auto; }
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
@@ -483,17 +330,12 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
               // ---------------------------------------------------------------
               // PATH A BUTTON — "Use My Location"
               // ---------------------------------------------------------------
-              // `Semantics` with `button: true` = `role="button"` + `aria-label` in HTML.
-              // Screen readers will announce: "Use my current GPS location..., button"
               Semantics(
                 button: true,
                 label:
                     'Use my current GPS location to find nearby Wikipedia articles',
                 child: ElevatedButton.icon(
-                  // `key` is a test selector — like `data-testid="location-button"` in React Testing Library.
-                  // The integration test uses `find.byKey(const Key('location_button'))` to find this widget.
                   key: const Key('location_button'),
-                  // Setting `onPressed: null` disables the button — equivalent to the HTML `disabled` attribute.
                   onPressed: isLoading ? null : _handleLocationPressed,
                   icon: const Icon(Icons.location_on),
                   label: const Text('Use My Location'),
@@ -507,7 +349,6 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
 
               const SizedBox(height: 12),
 
-              // Divider with "or" label — a common UI pattern for dual-path forms
               const Row(
                 children: [
                   Expanded(child: Divider()),
@@ -523,13 +364,8 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
 
               // ---------------------------------------------------------------
               // PATH B INPUT — Location text field
-              //
-              // `TextField` = <input type="text" /> in HTML.
-              // `TextEditingController` provides the controlled-component pattern —
-              // equivalent to `value={location} onChange={e => setLocation(e.target.value)}`
               // ---------------------------------------------------------------
               Semantics(
-                // `textField: true` = `role="textbox"` for screen readers
                 textField: true,
                 label: 'Location text input',
                 child: TextField(
@@ -543,8 +379,6 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
                     prefixIcon: const Icon(Icons.location_city),
                     border: const OutlineInputBorder(),
                     // Show a clear (×) button only when there is text.
-                    // Equivalent to a controlled <input> with a conditional
-                    // clear icon: {value && <button onClick={() => setValue('')} />}
                     suffixIcon: _controller.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear),
@@ -553,8 +387,6 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
                           )
                         : null,
                   ),
-                  // `onSubmitted` fires when the user presses Enter/Done on the keyboard.
-                  // Equivalent to: `onKeyDown={e => e.key === 'Enter' && handleSearch()}`
                   onSubmitted:
                       isLoading ? null : (_) => _handleLocationSearch(),
                   textInputAction: TextInputAction.search,
@@ -591,7 +423,7 @@ class _SearchControlsState extends ConsumerState<_SearchControls>
 //   1. isLoading → spinner
 //   2. error     → error message
 //   3. empty     → prompt to search
-//   4. articles  → responsive list (1 col) or grid (2–3 cols)
+//   4. articles  → responsive list
 // =============================================================================
 class _ResultsView extends StatelessWidget {
   final AppState appState;
@@ -601,7 +433,6 @@ class _ResultsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // ---- STATE 1: Loading ------------------------------------------------
-    // Equivalent to: if (isLoading) return <CircularProgress />
     if (appState.isLoading) {
       return Center(
         child: Semantics(
@@ -625,9 +456,6 @@ class _ResultsView extends StatelessWidget {
               children: [
                 const Icon(Icons.error_outline, color: Colors.red, size: 48),
                 const SizedBox(height: 12),
-                // `appState.error!` — the `!` is Dart's non-null assertion.
-                // We already confirmed `error != null` above, so this is safe.
-                // Equivalent to TypeScript's `appState.error!` (non-null assertion).
                 Text(
                   appState.error!,
                   textAlign: TextAlign.center,
@@ -666,8 +494,6 @@ class _ResultsView extends StatelessWidget {
     }
 
     // ---- STATE 4: Articles list / grid -----------------------------------
-    // `LayoutBuilder` provides the parent's constraints at build time —
-    // equivalent to a CSS container query or a ResizeObserver callback.
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = _columnCount(constraints.maxWidth);
@@ -713,30 +539,17 @@ class _ArticleCard extends ConsumerWidget {
   final Article article;
   // `compact` = true when rendered inside a GridView cell.
   // Reduces margins and clips the title to one line so the card fits the
-  // fixed grid cell height — equivalent to a CSS variant class:
-  //   .card--compact { margin: 2px 4px; }
-  //   .card--compact .title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   final bool compact;
 
   const _ArticleCard({required this.article, this.compact = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Memoized selector: only re-renders this card when THIS article's visited
-    // status changes — not on every state update.
-    //
-    // Zustand equivalent:
-    //   const isVisited = useAppStore(s => s.history.includes(article.title))
-    //
-    // `.select()` is Riverpod's equivalent of a memoized selector in Reselect /
-    // Zustand's `useStore(selector)`. It prevents unnecessary re-renders.
     final isVisited = ref.watch(
       appProvider.select((s) => s.history.contains(article.title)),
     );
 
     return Semantics(
-      // Compose a rich accessible label for each card — equivalent to:
-      //   aria-label={`${title}. ${dist}m away. ${visited ? 'Visited.' : 'Tap to open.'}`}
       label: '${article.title}. '
           '${article.dist.toStringAsFixed(0)} metres away. '
           '${isVisited ? 'Already visited.' : 'Tap to open in browser.'}',
@@ -747,7 +560,6 @@ class _ArticleCard extends ConsumerWidget {
           vertical: compact ? 2 : 5,
         ),
         elevation: isVisited ? 0 : 2,
-        // Tint visited cards to give visual feedback — like a `:visited` CSS pseudo-class
         color: isVisited
             ? Theme.of(context).colorScheme.surfaceContainerHighest
             : null,
@@ -789,10 +601,6 @@ class _ArticleCard extends ConsumerWidget {
             if (await canLaunchUrl(uri)) {
               await launchUrl(uri, mode: LaunchMode.externalApplication);
             } else {
-              // IMPORTANT: After any `await`, the widget may have been unmounted.
-              // `context.mounted` guards against calling `ScaffoldMessenger.of(context)`
-              // on a disposed widget — equivalent to checking `isMounted` in older
-              // React class components, or the AbortController pattern in hooks.
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Could not open the article.')),
@@ -811,8 +619,6 @@ class _ArticleCard extends ConsumerWidget {
 //
 // `StatelessWidget` is sufficient here because all the data it needs
 // (`history`) is passed in as a constructor parameter — no store access needed.
-// The parent (HomeScreen) already watches the store and passes the slice down,
-// which is the same prop-drilling pattern common in React.
 // =============================================================================
 class _HistoryView extends StatelessWidget {
   final List<String> history;
@@ -882,14 +688,6 @@ class _HistoryView extends StatelessWidget {
 
 // =============================================================================
 // HISTORY CARD — individual visited-article item
-//
-// History stores only article titles (strings), not full Article objects.
-// We reconstruct a valid Wikipedia URL using `Uri(pathSegments: ...)` so Dart
-// percent-encodes the title automatically:
-//   "New York" → https://en.wikipedia.org/wiki/New%20York
-//
-// TypeScript equivalent:
-//   const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`;
 // =============================================================================
 class _HistoryCard extends StatelessWidget {
   final String title;
@@ -921,8 +719,6 @@ class _HistoryCard extends StatelessWidget {
           ),
           trailing: const Icon(Icons.open_in_browser, size: 20),
           onTap: () async {
-            // `Uri(pathSegments: ['wiki', title])` percent-encodes each segment.
-            // Equivalent to: `new URL('/wiki/' + encodeURIComponent(title), base)` in JS.
             final uri = Uri(
               scheme: 'https',
               host: 'en.wikipedia.org',
@@ -953,13 +749,6 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // NOTE: Do NOT wrap in Center here — bottomNavigationBar gives loose height
-    // constraints, and Center expands to fill all of them, leaving the body 0px tall.
-    // textAlign: TextAlign.center achieves the same visual result safely.
-    // Row keeps the footer text centred without using Center (which would expand
-    // to fill the full bottomNavigationBar height and collapse the body).
-    // "by " is plain text; "Ivana" is a GestureDetector — same pattern as
-    // wrapping a <span onClick={...}> inside a <p> in React.
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -975,9 +764,6 @@ class _Footer extends StatelessWidget {
               fontSize: 14,
             ),
           ),
-          // TextButton = <button> in HTML. Already handles ripple, semantics,
-          // and focus/hover states out of the box — no manual InkWell needed.
-          // Equivalent to: <a href="https://github.com/LucySpass" target="_blank">Ivana</a>
           TextButton(
             onPressed: () => launchUrl(
               Uri.parse('https://github.com/LucySpass'),
@@ -1008,10 +794,6 @@ class _Footer extends StatelessWidget {
 //
 // `ConsumerWidget` because it needs to both READ the current mode (to pick the
 // right icon) and WRITE a new mode (on tap).
-//
-// The three-state cycle mirrors a common web pattern:
-//   const [theme, setTheme] = useState<'system'|'light'|'dark'>('system')
-//   const nextTheme = { system: 'light', light: 'dark', dark: 'system' }[theme]
 // =============================================================================
 class _ThemeModeButton extends ConsumerWidget {
   const _ThemeModeButton();
@@ -1040,9 +822,6 @@ class _ThemeModeButton extends ConsumerWidget {
           'theme_mode_button'), // test selector → find.byKey(const Key('theme_mode_button'))
       icon: Icon(icon, color: Theme.of(context).colorScheme.onPrimary),
       tooltip: tooltip,
-      // `ref.read` (not `ref.watch`) inside event handlers — same rule as always.
-      // Writing `.state =` on a StateProvider notifier is like calling Zustand's
-      // `set()`: all watchers of `themeModeProvider` re-render immediately.
       onPressed: () => ref.read(themeModeProvider.notifier).state = next,
     );
   }

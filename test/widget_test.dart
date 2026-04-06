@@ -4,14 +4,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flutter_wiki/main.dart';
 
 void main() {
   testWidgets('App renders and shows search controls',
       (WidgetTester tester) async {
     // ProviderScope is required because the app uses Riverpod.
-    // Equivalent to wrapping with <Provider store={store}> in a React test.
     await tester.pumpWidget(
       const ProviderScope(
         child: WikipediaExplorerApp(),
