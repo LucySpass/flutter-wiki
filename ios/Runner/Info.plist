@@ -6,7 +6,7 @@
 	     popup when the app first calls Geolocator.requestPermission().
 	     Without this key the app will crash immediately on location request. -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Wikipedia Explorer uses your location to find nearby articles.</string>
+	<string>Fluwiki uses your location to find nearby articles.</string>
 
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>

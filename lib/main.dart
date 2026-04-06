@@ -9,7 +9,7 @@
 //            └─ Scaffold
 //               ├─ appBar: AppBar
 //               │  ├─ title: Row
-//               │  │  ├─ Text 'Wikipedia Explorer'
+//               │  │  ├─ Text 'Fluwiki'
 //               │  │  └─ _ThemeModeButton    ← cycles system / light / dark theme
 //               │  └─ bottom: PreferredSize
 //               │     ├─ _StatsBar           ← API call count + history length
@@ -36,7 +36,7 @@ import 'state/app_state.dart';
 const double _kMaxContentWidth = 1300;
 // Height of the stats bar strip shown between the toolbar and the tab bar.
 const double _kStatsBarHeight = 32.0;
-const String _kMainTitle = "Wikipedia Explorer";
+const String _kMainTitle = "Fluwiki";
 // Brand color for theme seed — compile-time constant like #008080 in CSS
 const Color _kBrandColor = Colors.teal;
 

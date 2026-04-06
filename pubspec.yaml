@@ -1,5 +1,5 @@
 name: flutter_wiki
-description: "Wikipedia Explorer — finds nearby Wikipedia articles via GPS or city search."
+description: "Fluwiki — finds nearby Wikipedia articles via GPS or city search."
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -66,9 +66,10 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
+  remove_alpha_ios: true
   web:
     generate: true
-  image_path: "logo.jpg"
+  image_path: "logo.png"
 
 flutter:
   uses-material-design: true

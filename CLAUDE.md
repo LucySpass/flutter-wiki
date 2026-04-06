@@ -7,23 +7,23 @@ type: user
 Senior frontend developer with deep React and TypeScript expertise (including state management with Zustand/Redux). New to Flutter and Dart. Learns best through analogies to React patterns (JSX → build(), useSelector → ref.watch, Zustand store → Notifier, etc.). The codebase is already heavily annotated with these React/TS analogies to support this learning style.
 
 ## Workflow preferences
+
 - **Always show active work**: Use TodoWrite to track tasks so progress is visible at all times.
 - **Always re-read files before editing**: User makes manual changes frequently — never assume file contents are the same as last read. Re-read immediately before every edit.
 - **Fast answers**: Keep responses concise and focused. Don't do side tasks (like running tests) unless explicitly asked.
 
-Technical Specification: Wikipedia Explorer (Flutter Technical Assignment)
+Technical Specification: Wikipedia Explorer
+
 1. Context for the AI Assistant (Copilot)
 
 Role: Act as a Senior Flutter Developer mentoring a Senior React/TypeScript Developer.
-Goal: Generate a complete, production-ready Flutter application that fulfills a 3-hour technical assignment.
-Constraint: Whenever generating code, include heavy inline comments that translate Dart/Flutter concepts into React, TypeScript, and Zustand/Redux terms. Ensure the code is clean, modular, and testable.
-2. Project Overview
+Goal: Generate a complete, production-ready Flutter application.
+Constraint: Whenever generating code, include heavy inline comments that translate Dart/Flutter concepts into React, TypeScript, and Zustand/Redux terms. Ensure the code is clean, modular, and testable. 2. Project Overview
 
-App Name: Wikipedia Explorer
+App Name: Fluwiki
 Description: A cross-platform application that finds Wikipedia articles about nearby locations. It uses the device's GPS to find articles based on current coordinates, or allows the user to manually search by typing a city name.
 Target Platforms: Android, iOS, and Web.
-Time Limit: Must be simple enough to explain and build within a 3-hour window.
-3. Core Requirements & User's Specific Requests
+Time Limit: Must be simple enough to explain and build within a 3-hour window. 3. Core Requirements & User's Specific Requests
 
     Dual-Path Data Fetching (Permission Fallback):
 
@@ -79,7 +79,7 @@ Utilities: url_launcher
 
     Used to open the Wikipedia article in the device's default web browser when tapped.
 
-5. UI / UX Guidelines
+5.  UI / UX Guidelines
 
     Search/Action Area: A prominent "Use My Location" button (ElevatedButton) and a manual Text Input (TextField) with a "Search City" button.
 
@@ -89,7 +89,7 @@ Utilities: url_launcher
 
     Loading/Error States: Show a CircularProgressIndicator while fetching, and display readable error messages using a SnackBar or Text widget if something fails (e.g., "City not found").
 
-6. Testing Requirements
+6.  Testing Requirements
 
     Integration Test: Include a Flutter Integration Test using the integration_test package.
 
@@ -103,7 +103,7 @@ Utilities: url_launcher
 
         Verify that loading state appears, and eventually, that the list of articles populates.
 
-7. Instructions for Code Generation (Prompt to Copilot)
+7.  Instructions for Code Generation (Prompt to Copilot)
 
 Based on the specification above, please generate the following files step-by-step:
 

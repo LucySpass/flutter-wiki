@@ -1,4 +1,4 @@
-// Basic smoke test for Wikipedia Explorer.
+// Basic smoke test for Fluwiki.
 // Verifies the app renders without crashing and the core UI elements are present.
 
 import 'package:flutter/material.dart';
@@ -17,7 +17,7 @@ void main() {
     );
 
     // App bar title is visible
-    expect(find.text('Wikipedia Explorer'), findsOneWidget);
+    expect(find.text('Fluwiki'), findsOneWidget);
 
     // Both search controls are present
     expect(find.byKey(const Key('location_button')), findsOneWidget);

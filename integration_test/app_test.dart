@@ -16,7 +16,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   // `group` organises related tests — like `describe()` in Jest/Vitest/Cypress.
-  group('Wikipedia Explorer — Manual City Search Flow', () {
+  group('Fluwiki — Manual City Search Flow', () {
     // -------------------------------------------------------------------------
     // TEST: Full manual search path
     // -------------------------------------------------------------------------
